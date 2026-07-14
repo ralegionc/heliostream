@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heliostream — geomagnetic storm nowcast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b14; --panel:#10121f; --panel2:#0d0f1a;
+    --line:#211a3d; --line2:#2c2450;
+    --ink:#e9e8f2; --dim:#8b88a8; --faint:#5a5878;
+    --indigo:#7c5cff; --violet:#a78bfa; --glow:#7c5cff;
+    --quiet:#3ee6c4; --amber:#c9a227; --orange:#ff8c42; --red:#ff4d6d;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Space Grotesk",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:
+    radial-gradient(1200px 500px at 15% -10%, rgba(124,92,255,.10), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(62,230,196,.05), transparent 55%),
+    var(--bg);min-height:100vh}
+  .mono{font-family:"Space Mono",monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 22px 60px}
+
+  /* header */
+  header{display:flex;align-items:baseline;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .brand h1{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:0}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--indigo);
+    box-shadow:0 0 12px var(--glow);align-self:center}
+  .brand .sub{color:var(--faint);font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase}
+  .stamp{color:var(--dim);font-size:12px}
+  .stamp b{color:var(--violet);font-weight:500}
+
+  /* alert banner — the storm state is the loudest thing on the page */
+  .alert{position:relative;border:1px solid var(--line2);border-radius:14px;
+    padding:18px 20px;margin-bottom:20px;overflow:hidden;
+    background:linear-gradient(90deg,rgba(124,92,255,.06),transparent)}
+  .alert .rail{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--indigo)}
+  .alert .row{display:flex;align-items:center;justify-content:space-between;
+    gap:16px;flex-wrap:wrap}
+  .alert .label{font-size:26px;font-weight:700;letter-spacing:-.01em}
+  .alert .meta{color:var(--dim);font-size:13px;margin-top:2px}
+  .alert .gauge{text-align:right}
+  .alert .gauge .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .alert .gauge .v{font-size:30px;font-weight:700}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;padding:18px 18px 14px}
+  .panel h2{margin:0 0 2px;font-size:13px;font-weight:600;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--violet)}
+  .panel .hint{color:var(--faint);font-size:12px;margin:0 0 12px}
+
+  /* forecast chart */
+  #chart{width:100%;height:300px;display:block}
+  .legend{display:flex;gap:16px;color:var(--dim);font-size:12px;margin-top:8px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:12px;height:3px;border-radius:2px;
+    vertical-align:middle;margin-right:6px}
+
+  /* solar wind readouts */
+  .sw{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .cell{border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;
+    background:rgba(124,92,255,.03)}
+  .cell .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+  .cell .v{font-size:24px;font-weight:700;margin-top:3px}
+  .cell .u{font-size:12px;color:var(--dim);font-weight:400;margin-left:4px}
+  .cell.south .v{color:var(--orange)}
+
+  /* sun->earth strip */
+  .flow{display:flex;align-items:center;gap:10px;margin:2px 0 16px;color:var(--faint);
+    font-size:12px;letter-spacing:.08em}
+  .flow .seg{flex:1;height:1px;background:linear-gradient(90deg,var(--line2),transparent)}
+  .flow .node{display:flex;align-items:center;gap:7px}
+  .flow .orb{width:10px;height:10px;border-radius:50%}
+  .flow .sun{background:#ffcf6b;box-shadow:0 0 10px #ffcf6b88}
+  .flow .l1{background:var(--violet);box-shadow:0 0 10px var(--violet)}
+  .flow .earth{background:var(--quiet);box-shadow:0 0 10px var(--quiet)}
+
+  table.h{width:100%;border-collapse:collapse;margin-top:4px}
+  table.h th,table.h td{text-align:right;padding:6px 4px;font-size:13px;
+    border-bottom:1px solid var(--line)}
+  table.h th{color:var(--faint);font-weight:500;font-size:11px;
+    letter-spacing:.08em;text-transform:uppercase}
+  table.h td:first-child,table.h th:first-child{text-align:left}
+
+  footer{margin-top:22px;color:var(--faint);font-size:12px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .pill{display:inline-block;border:1px solid var(--line2);border-radius:999px;
+    padding:2px 9px;color:var(--dim)}
+  .err{color:var(--red);font-size:13px}
+  @media(prefers-reduced-motion:no-preference){
+    .live{animation:pulse 2.4s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <span class="dot live"></span>
+      <h1>Heliostream</h1>
+      <span class="sub">Dst nowcast</span>
+    </div>
+    <div class="stamp">source <b id="src">—</b> · updated <b id="upd">—</b></div>
+  </header>
+
+  <section class="alert" id="alert">
+    <div class="rail" id="rail"></div>
+    <div class="row">
+      <div>
+        <div class="label" id="alabel">Awaiting telemetry</div>
+        <div class="meta" id="ameta">Connecting to the forecast service…</div>
+      </div>
+      <div class="gauge">
+        <div class="k">min forecast Dst · next 6 h</div>
+        <div class="v mono" id="mindst">—</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Ring-current forecast</h2>
+      <p class="hint">Observed Dst now, then the +1 to +6 h nowcast with its 90% conformal interval.</p>
+      <svg id="chart" viewBox="0 0 640 300" preserveAspectRatio="none" aria-label="Dst forecast"></svg>
+      <div class="legend">
+        <span><i style="background:var(--violet)"></i>forecast mean</span>
+        <span><i style="background:var(--indigo);opacity:.4"></i>90% interval</span>
+        <span><i style="background:var(--orange)"></i>storm threshold (−50 nT)</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Upstream solar wind</h2>
+      <div class="flow">
+        <span class="node"><span class="orb sun"></span>Sun</span>
+        <span class="seg"></span>
+        <span class="node"><span class="orb l1"></span>L1</span>
+        <span class="seg"></span>
+        <span class="node"><span class="orb earth"></span>Earth</span>
+      </div>
+      <div class="sw" id="sw"></div>
+
+      <h2 style="margin-top:18px">Forecast table</h2>
+      <table class="h"><thead>
+        <tr><th>lead</th><th>Dst</th><th>low</th><th>high</th></tr>
+      </thead><tbody id="ftab"></tbody></table>
+    </div>
+  </div>
+
+  <footer>
+    <span id="ferr"></span>
+    <span>
+      <span class="pill" id="mtag">model —</span>
+      <span class="pill">coverage target 90%</span>
+      <span class="pill">refresh 15 s</span>
+    </span>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const SW = [
+  ["Bz","bz","nT"],["Bt","bt","nT"],["Speed","v","km/s"],
+  ["Density","n","cm⁻³"],["VBs","vbs","mV/m"],["Pdyn","pdyn","nPa"]
+];
+
+function fmt(x,d=1){return (x>=0?"":"")+x.toFixed(d);}
+
+function drawChart(dst0, fc){
+  const svg=$("chart"); svg.innerHTML="";
+  const W=640,H=300, m={l:44,r:14,t:14,b:26};
+  const xs=[0,...fc.map(f=>f.h)];
+  const means=[dst0,...fc.map(f=>f.mean)];
+  const los=[dst0,...fc.map(f=>f.lo)];
+  const his=[dst0,...fc.map(f=>f.hi)];
+  let ymin=Math.min(-60,...los)-8, ymax=Math.max(10,...his)+6;
+  const X=h=>m.l+(h/6)*(W-m.l-m.r);
+  const Y=v=>m.t+(1-(v-ymin)/(ymax-ymin))*(H-m.t-m.b);
+
+  const add=(t,a)=>{const e=document.createElementNS(NS,t);
+    for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e;};
+
+  // gridlines + y labels
+  for(let g=Math.ceil(ymin/50)*50; g<=ymax; g+=50){
+    add("line",{x1:m.l,y1:Y(g),x2:W-m.r,y2:Y(g),stroke:"#211a3d","stroke-width":1});
+    const t=add("text",{x:m.l-8,y:Y(g)+4,fill:"#5a5878","font-size":11,
+      "text-anchor":"end","font-family":"Space Mono"});t.textContent=g;
+  }
+  // storm threshold
+  add("line",{x1:m.l,y1:Y(-50),x2:W-m.r,y2:Y(-50),stroke:"#ff8c42",
+    "stroke-width":1,"stroke-dasharray":"4 4","opacity":.7});
+
+  // x labels
+  xs.forEach(h=>{const t=add("text",{x:X(h),y:H-8,fill:"#5a5878","font-size":11,
+    "text-anchor":"middle","font-family":"Space Mono"});
+    t.textContent=h===0?"now":"+"+h;});
+
+  // conformal band
+  let d="M";
+  xs.forEach((h,i)=>{d+=` ${X(h)} ${Y(his[i])}`;});
+  for(let i=xs.length-1;i>=0;i--){d+=` ${X(xs[i])} ${Y(los[i])}`;}
+  d+=" Z";
+  add("path",{d,fill:"#7c5cff",opacity:.20});
+
+  // mean line
+  let pl=xs.map((h,i)=>`${X(h)},${Y(means[i])}`).join(" ");
+  add("polyline",{points:pl,fill:"none",stroke:"#a78bfa","stroke-width":2.4,
+    "stroke-linejoin":"round"});
+  // origin marker
+  add("circle",{cx:X(0),cy:Y(dst0),r:4,fill:"#3ee6c4"});
+  fc.forEach(f=>add("circle",{cx:X(f.h),cy:Y(f.mean),r:3,fill:"#a78bfa"}));
+}
+
+function paint(d){
+  $("src").textContent=d.source;
+  $("upd").textContent=new Date(d.generated).toLocaleTimeString();
+  $("mtag").textContent="model "+d.model;
+  $("ferr").textContent="";
+
+  const a=d.alert;
+  $("alabel").textContent=a.label;
+  $("mindst").textContent=fmt(d.min_dst,0)+" nT";
+  $("mindst").style.color=a.color;
+  $("rail").style.background=a.color;
+  $("alabel").style.color=a.color;
+  $("ameta").textContent=
+    `initial Dst ${fmt(d.dst0,0)} nT · Bz ${fmt(d.current_solar_wind.bz)} nT · `
+    +`V ${Math.round(d.current_solar_wind.v)} km/s`;
+
+  // solar wind cells
+  const sw=$("sw"); sw.innerHTML="";
+  SW.forEach(([lab,key,unit])=>{
+    const v=d.current_solar_wind[key];
+    const south=(key==="bz"&&v<0);
+    sw.insertAdjacentHTML("beforeend",
+      `<div class="cell ${south?'south':''}"><div class="k">${lab}</div>
+       <div class="v mono">${fmt(v, key==='v'?0:(key==='pdyn'||key==='vbs'?2:1))}<span class="u">${unit}</span></div></div>`);
+  });
+
+  // forecast table
+  const tb=$("ftab"); tb.innerHTML="";
+  d.forecast.forEach(f=>tb.insertAdjacentHTML("beforeend",
+    `<tr><td>+${f.h} h</td><td class="mono">${fmt(f.mean,0)}</td>
+     <td class="mono" style="color:var(--dim)">${fmt(f.lo,0)}</td>
+     <td class="mono" style="color:var(--dim)">${fmt(f.hi,0)}</td></tr>`));
+
+  drawChart(d.dst0, d.forecast);
+}
+
+async function tick(){
+  try{
+    const r=await fetch("/api/nowcast",{cache:"no-store"});
+    const d=await r.json();
+    if(d.error){throw new Error(d.error);}
+    paint(d);
+  }catch(e){
+    $("ferr").innerHTML=`<span class="err">telemetry error — ${e.message}. Retrying…</span>`;
+  }
+}
+tick();
+setInterval(tick, 15000);
+</script>
+</body>
+</html>

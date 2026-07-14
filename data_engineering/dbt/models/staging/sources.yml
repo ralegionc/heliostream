@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Landing zone written by the streaming consumer from the bus."
+    schema: raw
+    tables:
+      - name: solar_wind
+        description: "Upstream solar-wind hours (NOAA live / OMNI backfill / synthetic)."
+        loaded_at_field: ingested_at
+        freshness:
+          warn_after: {count: 3, period: hour}
+          error_after: {count: 12, period: hour}
+        columns:
+          - name: time
+            description: "Observation timestamp (natural key)."
+            tests: [not_null, unique]
+          - name: source
+            tests:
+              - accepted_values:
+                  arguments:
+                    values: ["noaa", "omni", "synthetic"]

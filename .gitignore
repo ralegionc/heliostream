@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data + model artifacts (regenerate with: python -m heliostream train)
+artifacts/data/*.parquet
+artifacts/models/*.pt
+**/*.duckdb
+**/*.duckdb.wal
+**/*.parquet
+
+# Data-engineering runtime state
+data_engineering/warehouse/
+data_engineering/dbt/target/
+data_engineering/dbt/dbt_packages/
+data_engineering/dbt/logs/
+data_engineering/dbt/.user.yml
+**/*.offset
+logs/
+
+# Dagster local state
+.tmp_dagster_home_*/
+dagster_home/
+$DAGSTER_HOME/
+
+# Streamlit (never commit secrets.toml)
+.streamlit/secrets.toml
+**/.streamlit/secrets.toml
+
+# Local scratch
+gaps.py
+*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+artifacts/

@@ -1,0 +1,79 @@
+# Local streaming stack: Redpanda (Kafka API) + console + producer/consumer + dbt.
+#   docker compose up -d redpanda console consumer producer   # start streaming
+#   docker compose run --rm dbt build                          # transform + test
+#   docker compose run --rm dbt test                           # tests only
+# The DuckDB warehouse is shared via ./warehouse (bind mount). DuckDB is
+# single-writer: the consumer releases its connection between drains, and dbt
+# runs on demand, so they do not hold the file simultaneously. Swap DuckDB for
+# Postgres if you need concurrent writers.
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:19092
+    ports:
+      - "19092:19092"
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  console:
+    image: redpandadata/console:v2.7.2
+    environment:
+      KAFKA_BROKERS: redpanda:19092
+    ports:
+      - "8080:8080"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  consumer:
+    build:
+      context: ..
+      dockerfile: data_engineering/Dockerfile
+    environment:
+      HELIO_BUS: kafka
+      HELIO_KAFKA_BROKERS: redpanda:19092
+      HELIO_DUCKDB: /data/heliostream.duckdb
+    volumes:
+      - ./warehouse:/data
+    command: ["python", "-m", "heliostream_de", "consume-loop", "--interval", "15"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  producer:
+    build:
+      context: ..
+      dockerfile: data_engineering/Dockerfile
+    environment:
+      HELIO_BUS: kafka
+      HELIO_KAFKA_BROKERS: redpanda:19092
+    # Offline demo feed. For the real feed, swap to:
+    #   ["python","-m","heliostream_de","stream-noaa","--interval","3600"]
+    command: ["python", "-m", "heliostream_de", "stream-synthetic", "--interval", "5"]
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  dbt:
+    build:
+      context: ..
+      dockerfile: data_engineering/Dockerfile
+    environment:
+      HELIO_DUCKDB: /data/heliostream.duckdb
+    volumes:
+      - ./warehouse:/data
+    working_dir: /app/data_engineering/dbt
+    entrypoint: ["dbt"]
+    command: ["build", "--project-dir", ".", "--profiles-dir", "."]
+    profiles: ["tools"]     # on-demand: `docker compose run --rm dbt build`

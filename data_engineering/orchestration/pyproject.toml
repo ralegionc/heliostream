@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heliostream_dagster"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+    "dagster>=1.7",
+    "dagster-dbt>=0.23",
+    "dagster-webserver>=1.7",
+    "dbt-duckdb>=1.7",
+]
+
+[tool.dagster]
+module_name = "heliostream_dagster"
+code_location_name = "heliostream"
+
+[tool.setuptools.packages.find]
+include = ["heliostream_dagster*"]

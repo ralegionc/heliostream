@@ -1,0 +1,10 @@
+# Pipeline services (ingestion, warehouse, transforms)
+duckdb>=0.10
+dbt-duckdb>=1.7
+kafka-python>=2.0
+pandas>=2.0
+numpy>=1.24
+pyarrow>=12.0
+requests>=2.31
+# The model/training step additionally needs the heliostream package (which
+# pulls torch). Install it from the repo root:  pip install -e ..

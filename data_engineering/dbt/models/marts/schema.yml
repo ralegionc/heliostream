@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: features_hourly
+    description: "Model-ready hourly features (raw channels + physics derivations)."
+    columns:
+      - name: time
+        tests: [not_null, unique]
+      - name: bt
+        tests: [not_null]
+      - name: bz
+        tests: [not_null]
+      - name: v
+        tests: [not_null]
+      - name: n
+        tests: [not_null]
+      - name: pdyn
+        tests: [not_null]

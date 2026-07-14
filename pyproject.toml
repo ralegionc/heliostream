@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heliostream"
+version = "0.1.0"
+description = "Physics-informed, uncertainty-aware geomagnetic storm (Dst) nowcasting from live solar wind"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.1", "numpy>=1.24", "pandas>=2.0", "pyarrow>=12.0",
+    "scipy>=1.10", "matplotlib>=3.7", "fastapi>=0.110",
+    "uvicorn>=0.27", "requests>=2.31",
+]
+
+[project.scripts]
+heliostream = "heliostream.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["heliostream*"]

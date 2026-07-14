@@ -1,0 +1,8 @@
+heliostream:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('HELIO_DUCKDB', '../warehouse/heliostream.duckdb') }}"
+      schema: main
+      threads: 4

@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: stg_solar_wind
+    description: "Typed, deduplicated solar-wind hours."
+    columns:
+      - name: time
+        tests: [not_null, unique]
+      - name: v
+        tests: [not_null]
+      - name: bt
+        tests: [not_null]
