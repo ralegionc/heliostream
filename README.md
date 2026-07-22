@@ -577,8 +577,5 @@ Compose, but the file-backed bus is what the automated tests use.
 
 **Built with** PyTorch, DuckDB, dbt, Dagster, Kafka/Redpanda, FastAPI, Streamlit, Altair.
 
-**AI assistance disclosed.** This project was built with substantial help from Claude (Anthropic),
-including the model architecture, pipeline, and this documentation. The results reported here were
-produced by running the code on real NASA data, not estimated or simulated.
 
 **Licence:** MIT. See [LICENSE](LICENSE).
